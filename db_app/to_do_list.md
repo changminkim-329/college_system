@@ -4,8 +4,12 @@
 
 ~~mysql 연결~~
 
-model 생성
+~~schema 생성~~
 
-schema 생성
+~~model 생성~~
 
-crud 생성
+~~model db 연동~~
+
+~~crud 생성~~
+
+db
