@@ -1,8 +1,6 @@
 import unittest
-from pydantic import BaseModel
 from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy import Column, Integer, String, ForeignKey
-from test_database import return_engine, URL
 
 Base = declarative_base()
 class Student(Base):
@@ -39,8 +37,6 @@ class MyTest(unittest.TestCase):
         new_student = Student(
             email='test@gmail.com',name='test',password='test',age=26,
             classes='3-1',major_id=1)
-
-        print(new_student['email'])
 
         data = {'email':'test@gmail.com','name':'test','password':'test','age':26,'classes':'3-1','major_id':1}
         student = Student(**data)

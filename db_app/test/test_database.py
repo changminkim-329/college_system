@@ -17,7 +17,6 @@ class MyTest(unittest.TestCase):
     def test_db(self):
         Session = return_session(URL)
         session = Session()
-        print(session)
         session.close()
         
 

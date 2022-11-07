@@ -3,77 +3,49 @@ import unittest
 from test_database import return_session,URL
 from test_model import Student,Major
 from test_schema import *
-from typing import List,Dict
+from typing import List
 
-def get_object(session, Object, key, value):
-    objects:Object = session.query(Object).filter(key == value).first()
-    return objects
+class CollegeCRUD():
+    def __init__(self, session, Object, key):
+        self.session = session
+        self.Object = Object
+        self.key = key
 
-# def get_student(session, student_email:str) -> Student:
-#     student = session.query(Student).filter(Student.email == student_email).first()
-#     return student
+    def read(self, value):
+        objects = self.session.query(self.Object).filter(self.key == value).first()
+        return objects
 
-# def get_major(session,major_name) -> Major:
-#     major = session.query(Major).filter(Major.name == major_name).first()
-#     return major
+    def read_plural(self, offset:int, limit:int):
+        objects = self.session.query(self.Object).offset(offset).limit(limit).all()
+        return objects
 
+    def create(self,new_object_info):
+        new_object = self.Object(**new_object_info)
+        self.session.add(new_object)
+        self.session.commit()
 
-def get_objects(session, Object, offset:int, limit:int):
-    objects:List[Object] = session.query(Object).offset(offset).limit(limit).all()
-    return objects
+    def update(self, value, attr:dict):
+        self.session.query(self.Object).filter(self.key==value).update(attr)
+        self.session.commit()
 
-# def get_students(session, offset:int, limit:int) -> List[Student]:
-#     students = session.query(Student).offset(offset).limit(limit).all()
-#     return students
+    @staticmethod
+    def student(session):
+        return StudentCRUD(session)
 
-# def get_majors(session, offset:int, limit:int) -> List[Major]:
-#     majors = session.query(Major).offset(offset).limit(limit).all()
-#     return majors
+    @staticmethod
+    def major(session):
+        return MajorCRUD(session)
 
+class StudentCRUD(CollegeCRUD):
+    def __init__(self, session):
+        super().__init__(session, Student,Student.email)
+        self.name = 'student'
 
-
-def create_object(session,Object,new_object_info):
-    new_object:Object = Object(**new_object_info)
-    session.add(new_object)
-    a = session.commit()
-
-# def create_student(session,student:StudentCreate):
-#     new_student = Student(
-#         email=student.email,name=student.name,password=student.password,age=student.age,
-#         classes=student.classes,major_id=student.major_id)
-#     print(new_student)
-#     print("creas")
-#     session.add(new_student)
-#     a = session.commit()
-#     print(a)
-
-# def create_major(session,major:MajorCreate):
-#     new_major = Major(name=major.name,desc=major.desc)
-#     print(new_major)
-#     print("creas")
-#     session.add(new_major)
-#     a = session.commit()
-#     print(a)
+class MajorCRUD(CollegeCRUD):
+    def __init__(self, session):
+        super().__init__(session, Major,Major.name)
 
 
-
-def update_object(session, Object,key, value, attr:dict):
-    objects = session.query(Object).filter(key==value).update(attr)
-    session.commit()
-
-# def update_student(session, email:str,attr:dict):
-#     student_email = email
-#     student_attr = attr
-#     student = session.query(Student).filter(Student.email==student_email).update(student_attr)
-#     session.commit()
-#     print("출력:",student)
-
-# def update_major(session, name:str,attr:dict):
-#     major_name = name
-#     major_attr = attr
-#     major = session.query(Major).filter(Major.name==major_name).update(major_attr)
-#     session.commit()
-#     print("출력:",major)
 
 
 
@@ -84,42 +56,77 @@ class MyTest(unittest.TestCase):
         Session = return_session(URL)
         session = Session()
 
+        test_student = CollegeCRUD.student(session)
+        print(test_student.name)
+
         print("테스트 1")
-        student:Student = get_object(session,Student,key=Student.email,value='test@naver.com')
+        student:Student = test_student.read('test@naver.com')
+        # student:Student = get_object(session,Student,key=Student.email,value='test@naver.com')
         self.assertEqual(student.id,1)
+        self.assertNotEqual(student.id,2)
+        student:Student = test_student.read('chang@naver.com')
+        self.assertEqual(student.id,2)
+        self.assertNotEqual(student.id,3)
 
         # students = get_students(session,0,3)
-        students:List[Student] = get_objects(session,Student,0,3)
+        students:List[Student] = test_student.read_plural(0,3)
+        # students:List[Student] = get_objects(session,Student,0,3)
         if students:
             self.assertEqual(students[0].id,1)
+            self.assertEqual(students[1].id,2)
+            self.assertNotEqual(students[1].id,3)
         
-        # new_student = StudentCreate(
-        #     email='deny@naver.com',name='deny',password='deny',age=27,classes='4-2',major_id=2)
-        # print(new_student.dict())
+        new_student = StudentCreate(
+            email='jin@naver.com',name='jin',password='jin',age=22,classes='3-2',major_id=4)
+        test_student.create(new_student.dict())
+        student:Student = test_student.read(new_student.email)
+        self.assertEqual(student.classes,new_student.classes)
+        self.assertEqual(student.password,new_student.password)
         # create_object(session,Student,new_student.dict())
         # create_student(session,new_student)
         
         email='test@naver.com'
         attr={'classes':'1-2'}
-        update_object(session,Student,Student.email,email,attr)
+        test_student.update(email,attr)
+        student:Student = test_student.read(email)
+        self.assertEqual(student.classes,attr['classes'])
+        self.assertNotEqual(student.classes,'1-3')
+        # update_object(session,Student,Student.email,email,attr)
         # update_student(session,email,attr)
 
         print("테스트 2")
-        major:Major = get_object(session,Major,Major.name,'computer')
+        test_major = CollegeCRUD.major(session)
+        major:Major = test_major.read('computer')
+        # major:Major = get_object(session,Major,Major.name,'computer')
         self.assertEqual(major.name,'computer')
+        self.assertNotEqual(major.name,'math')
+        major:Major = test_major.read('math')
+        self.assertEqual(major.id,3)
+        self.assertNotEqual(major.id,1)
         
         # majors = get_majors(session,0,3)
-        majors:List[Major] = get_objects(session,Major,0,3)
+        majors:List[Major] = test_major.read_plural(0,3)
+        # majors:List[Major] = get_objects(session,Major,0,3)
         if majors:
             self.assertEqual(majors[0].name,'computer')
+            self.assertEqual(majors[1].id,2)
+            self.assertNotEqual(majors[1].id,3)
         
-        # new_major = MajorCreate(name='math',desc='수학과')
+        new_major = MajorCreate(name='japen',desc='일본어학과')
+        test_major.create(new_major.dict())
+        major:Major = test_major.read(new_major.name)
+        self.assertEqual(major.desc,new_major.desc)
+        self.assertEqual(major.name,new_major.name)
         # create_object(session,Major,new_major.dict())
         # create_major(session,new_major)
         
         name='english'
         attr={'desc':'영문어학과'}
-        update_object(session,Major,Major.name,name,attr)
+        test_major.update(name,attr)
+        major:Major = test_major.read(name)
+        self.assertEqual(major.desc,attr['desc'])
+        self.assertNotEqual(major.desc,'수학과')
+        # update_object(session,Major,Major.name,name,attr)
         # update_major(session,name,attr)
 
         session.close()
