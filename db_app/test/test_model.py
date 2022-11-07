@@ -19,12 +19,16 @@ class Student(Base):
     def __getitem__(self,key):
         return getattr(self, key)
 
+    
+
 class Major(Base):
     __tablename__ = 'major'
     id = Column(Integer,primary_key=True,index=True)
     name = Column(String(20),unique=True)
     desc = Column(String)
     
+    def __getitem__(self,key):
+        return getattr(self, key)
 
 class MyTest(unittest.TestCase):
     def test_model(self):
@@ -37,9 +41,13 @@ class MyTest(unittest.TestCase):
             classes='3-1',major_id=1)
 
         print(new_student['email'])
-    def test_migrate(self):
-        engine = return_engine(URL)
-        Base.metadata.create_all(bind=engine)
+
+        data = {'email':'test@gmail.com','name':'test','password':'test','age':26,'classes':'3-1','major_id':1}
+        student = Student(**data)
+
+    # def test_migrate(self):
+    #     engine = return_engine(URL)
+    #     Base.metadata.create_all(bind=engine)
 
 
 
